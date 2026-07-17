@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>LP To Do รายเดือน</title>
+<style>
+  :root{
+    --bg:#F8FAFC;
+    --panel:#FFFFFF;
+    --panel-2:#F1F5F9;
+    --border-col:#E2E8F0;
+    --text:#0F172A;
+    --text-dim:#64748B;
+    --accent:#2563EB;
+    --accent2:#1D4ED8;
+    --warn:#F59E0B;
+    --bad:#EF4444;
+    --good:#22C55E;
+    --safety:#6366F1;
+    --radius:18px;
+    --shadow:0 6px 20px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI","Noto Sans Thai",system-ui,-apple-system,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body{padding-bottom:48px;}
+
+  .topbar{
+    position:sticky;top:0;z-index:10;
+    background:linear-gradient(180deg,var(--bg) 85%,rgba(238,241,247,0));
+    padding:18px 16px 10px;
+  }
+  .topbar-inner, main{max-width:900px;margin:0 auto;}
+
+  @media (min-width:900px){
+    body{padding-bottom:60px;}
+    .topbar{padding:28px 24px 16px;}
+    .brand .mark{width:42px;height:42px;border-radius:13px;font-size:18px;}
+    .brand h1{font-size:21px;}
+    .brand .sub{font-size:12.5px;}
+    .month-row select{padding:11px 14px;font-size:14.5px;max-width:280px;flex:none;}
+    main{padding:14px 24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start;align-items:start;}
+    .card-head{padding:15px 16px;}
+    .card-title .t{font-size:14.5px;}
+    footer{max-width:900px;margin:0 auto;}
+  }
+  @media (min-width:1300px){
+    .topbar-inner, main, footer{max-width:1180px;}
+    main{grid-template-columns:1fr 1fr 1fr;}
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .brand .mark{
+    width:34px;height:34px;border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#ffffff;font-size:14px;flex:none;
+    box-shadow:0 4px 12px rgba(37,99,235,.30);
+  }
+  .brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px;color:var(--text);}
+  .brand .sub{font-size:11.5px;color:var(--text-dim);margin-top:1px;}
+
+  .month-row{display:flex;gap:8px;align-items:center;}
+  .sync-badge{
+    margin-top:8px;display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;font-weight:700;padding:5px 10px;border-radius:99px;
+    background:var(--panel-2);border:1px solid var(--border-col);color:var(--text-dim);
+  }
+  .sync-badge.online{color:#15803D;border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08);}
+  .sync-badge.connecting{color:#B45309;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08);}
+  .sync-badge.offline{color:var(--text-dim);}
+  .month-row select{
+    flex:1;background:var(--panel);border:1px solid var(--border-col);color:var(--text);
+    padding:10px 12px;border-radius:12px;font-size:14px;appearance:none;
+    box-shadow:var(--shadow);
+  }
+
+  .tabs{display:flex;gap:8px;margin-top:14px;}
+  .tab{
+    flex:1;text-align:center;padding:9px 8px;border-radius:99px;font-size:12.5px;font-weight:700;
+    background:var(--panel);border:1px solid var(--border-col);color:var(--text-dim);cursor:pointer;
+    transition:.15s;box-shadow:var(--shadow);
+  }
+  .tab[data-cat="all"].active{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;}
+  .tab[data-cat="lp"].active{background:linear-gradient(135deg,#2563EB,#3B82F6);border-color:transparent;color:#fff;}
+  .tab[data-cat="safety"].active{background:linear-gradient(135deg,#6366F1,#818CF8);border-color:transparent;color:#fff;}
+
+  .cat-chip-lp{color:#2563EB;border-color:rgba(37,99,235,.28);background:rgba(37,99,235,.10);}
+  .cat-chip-safety{color:#6366F1;border-color:rgba(99,102,241,.28);background:rgba(99,102,241,.10);}
+  .score-chip{color:#B45309;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.10);}
+  .resp-chip{color:#334155;border-color:#CBD5E1;background:#F1F5F9;}
+  .resp-chip.resp-missing{color:#DC2626;border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08);border-style:dashed;}
+  .badge{border-left:3px solid transparent;}
+  .card.cat-lp .badge{border-left-color:var(--accent);}
+  .card.cat-safety .badge{border-left-color:var(--safety);}
+
+  .bar{height:8px;border-radius:99px;background:var(--panel-2);overflow:hidden;position:relative;border:1px solid var(--border-col);}
+  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .35s ease;}
+
+  .dash-card-wrap{padding:14px 16px 4px;}
+  @media (min-width:900px){ .dash-card-wrap{padding:16px 24px 4px;} }
+  .dash-card{
+    margin-top:16px;background:var(--panel);border:1px solid var(--border-col);border-radius:var(--radius);
+    padding:16px 16px 18px;box-shadow:var(--shadow);
+  }
+  .dash-title{font-size:14px;font-weight:800;color:var(--text);}
+  .dash-month{font-size:12px;color:var(--text-dim);margin-top:3px;padding-bottom:12px;border-bottom:1px solid var(--border-col);}
+
+  .dash-rows{display:flex;flex-direction:column;gap:9px;margin-top:12px;}
+  .dash-row{display:flex;align-items:center;gap:9px;font-size:13px;}
+  .dash-icon{
+    flex:none;width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;
+  }
+  .dash-done .dash-icon{background:rgba(34,197,94,.14);color:var(--good);}
+  .dash-progress .dash-icon{background:rgba(245,158,11,.14);color:var(--warn);}
+  .dash-notstarted .dash-icon{background:rgba(100,116,139,.14);color:var(--text-dim);}
+  .dash-issue .dash-icon{background:rgba(239,68,68,.14);color:var(--bad);}
+  .dash-label{flex:1;color:#334155;font-weight:600;}
+  .dash-value{font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;}
+
+  .dash-divider{height:1px;background:var(--border-col);margin:14px 0 12px;}
+
+  .dash-score-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .dash-score-label{font-size:13px;font-weight:700;color:var(--text);}
+  .dash-score-value{font-size:17px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;}
+
+  .dash-compliance-top{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);margin-bottom:6px;}
+  .dash-compliance-top span:last-child{font-weight:800;color:var(--good);}
+
+  main{padding:6px 16px 20px;display:flex;flex-direction:column;gap:12px;}
+
+  .card{
+    background:var(--panel);border:1px solid var(--border-col);border-radius:var(--radius);
+    overflow:hidden;transition:box-shadow .2s,border-color .2s;box-shadow:var(--shadow);
+  }
+  .card.done{border-color:rgba(34,197,94,.4);}
+  .card.issue{border-color:rgba(239,68,68,.4);}
+  .card.progress{border-color:rgba(245,158,11,.4);}
+
+  .card-head{
+    display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;user-select:none;
+  }
+  .badge{
+    flex:none;width:30px;height:30px;border-radius:10px;background:var(--panel-2);
+    display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;
+    color:var(--text-dim);border:1px solid var(--border-col);
+  }
+  .card.done .badge{background:rgba(34,197,94,.12);color:var(--good);border-color:rgba(34,197,94,.3);}
+  .card.progress .badge{background:rgba(245,158,11,.12);color:var(--warn);border-color:rgba(245,158,11,.3);}
+  .card.issue .badge{background:rgba(239,68,68,.12);color:var(--bad);border-color:rgba(239,68,68,.3);}
+
+  .card-title{flex:1;min-width:0;}
+  .card-title .t{font-size:13.5px;font-weight:700;line-height:1.4;color:var(--text);}
+  .card-title .meta{font-size:11px;color:var(--text-dim);margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;}
+  .status-chip{
+    font-size:10.5px;padding:3px 9px;border-radius:99px;background:var(--panel-2);color:var(--text-dim);
+    border:1px solid var(--border-col);white-space:nowrap;font-weight:600;
+  }
+  .card.done .status-chip{color:var(--good);border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.08);}
+  .card.progress .status-chip{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
+  .card.issue .status-chip{color:var(--bad);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
+
+  .chev{flex:none;color:var(--text-dim);transition:transform .25s ease;font-size:12px;}
+  .card.open .chev{transform:rotate(180deg);}
+
+  .card-body{
+    display:grid;grid-template-rows:0fr;overflow:hidden;
+    transition:grid-template-rows .28s ease;
+    border-top:1px solid transparent;
+  }
+  .card.open .card-body{
+    grid-template-rows:1fr;border-top:1px solid var(--border-col);
+  }
+  .card-body-inner{padding:14px;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;}
+
+  .detail-box{
+    background:var(--panel-2);border:1px solid var(--border-col);border-radius:12px;
+    padding:11px 12px;font-size:12.3px;line-height:1.65;color:#4A5164;
+    white-space:pre-line;
+  }
+  .detail-box b{color:var(--text);}
+
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11px;color:var(--text-dim);font-weight:700;}
+  .field input[type=text],.field input[type=date],.field textarea,.field select{
+    background:var(--panel-2);border:1px solid var(--border-col);color:var(--text);
+    padding:9px 10px;border-radius:10px;font-size:13.5px;font-family:inherit;
+    width:100%;
+  }
+  .field textarea{resize:vertical;min-height:52px;}
+  .field .hint{font-size:10.5px;color:var(--text-dim);margin-top:2px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:380px){.row2{grid-template-columns:1fr;}}
+
+  .status-select{display:flex;gap:6px;flex-wrap:wrap;}
+  .status-opt{
+    flex:1;min-width:80px;text-align:center;padding:8px 6px;border-radius:99px;font-size:11.5px;font-weight:700;
+    background:var(--panel-2);border:1px solid var(--border-col);color:var(--text-dim);cursor:pointer;
+  }
+  .status-opt.active[data-v="ยังไม่เริ่ม"]{background:rgba(100,116,139,.14);color:#475569;border-color:#94A3B8;}
+  .status-opt.active[data-v="กำลังดำเนินการ"]{background:rgba(245,158,11,.15);color:var(--warn);border-color:var(--warn);}
+  .status-opt.active[data-v="เสร็จแล้ว"]{background:rgba(34,197,94,.15);color:var(--good);border-color:var(--good);}
+  .status-opt.active[data-v="มีปัญหา"]{background:rgba(239,68,68,.15);color:var(--bad);border-color:var(--bad);}
+
+  .savehint{font-size:10.5px;color:var(--text-dim);text-align:right;min-height:14px;}
+
+  footer{padding:18px 16px 6px;text-align:center;color:var(--text-dim);font-size:11px;}
+  .toast{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel);border:1px solid var(--border-col);color:var(--text);
+    padding:9px 18px;border-radius:99px;font-size:12.5px;opacity:0;transition:.25s;pointer-events:none;
+    box-shadow:var(--shadow);font-weight:600;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="mark">LP</div>
+      <div>
+        <h1>To Do รายเดือน — Loss Prevention</h1>
+        <div class="sub">Big C Sainoi (11252) • LP + Safety</div>
+      </div>
+    </div>
+
+    <div class="month-row">
+      <select id="monthSelect"></select>
+    </div>
+    <div id="syncStatus" class="sync-badge connecting">🟡 กำลังเชื่อมต่อ...</div>
+
+    <div class="tabs" id="filterTabs">
+      <div class="tab active" data-cat="all">ทั้งหมด</div>
+      <div class="tab" data-cat="lp">Loss Prevention</div>
+      <div class="tab" data-cat="safety">Safety</div>
+    </div>
+  </div>
+</div>
+
+<div class="topbar-inner dash-card-wrap">
+    <div class="dash-card">
+      <div class="dash-title">📊 Monthly Audit Dashboard</div>
+      <div class="dash-month" id="dashMonth">เดือน : —</div>
+
+      <div class="dash-rows">
+        <div class="dash-row dash-done">
+          <span class="dash-icon">✔</span>
+          <span class="dash-label">Completed</span>
+          <span class="dash-value" id="dashCompleted">0 / 0</span>
+        </div>
+        <div class="dash-row dash-progress">
+          <span class="dash-icon">⏳</span>
+          <span class="dash-label">In Progress</span>
+          <span class="dash-value" id="dashProgress">0</span>
+        </div>
+        <div class="dash-row dash-notstarted">
+          <span class="dash-icon">◻</span>
+          <span class="dash-label">Not Started</span>
+          <span class="dash-value" id="dashNotStarted">0</span>
+        </div>
+        <div class="dash-row dash-issue">
+          <span class="dash-icon">❌</span>
+          <span class="dash-label">Issues</span>
+          <span class="dash-value" id="dashIssue">0</span>
+        </div>
+      </div>
+
+      <div class="dash-divider"></div>
+
+      <div class="dash-score-row">
+        <span class="dash-score-label">Overall Score</span>
+        <span class="dash-score-value" id="dashScore">0 / 0</span>
+      </div>
+
+      <div class="dash-compliance">
+        <div class="dash-compliance-top">
+          <span>Compliance</span>
+          <span id="dashCompliancePct">0%</span>
+        </div>
+        <div class="bar"><div class="bar-fill" id="dashComplianceBar" style="width:0%"></div></div>
+      </div>
+    </div>
+</div>
+
+<main id="cardList"></main>
+
+<footer>บันทึกอัตโนมัติต่อเดือน • ข้อมูลเก็บเฉพาะในบัญชีนี้ ไม่แชร์กับผู้อื่น</footer>
+<div class="toast" id="toast">บันทึกแล้ว</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const LP_ITEMS = [{"no": 1, "title": "ตรวจสอบ ระบบ KEY CARD ACCESS", "maxScore": 2, "subs": ["ระบบ KEY CARD ACCESS, DOOR CARD สมบูรณ์และใช้งานได้ปกติ, เมื่อพบอุปกรณ์ชำรุดฝ่าย LP ต้องส่ง E-MAIL แจ้งซ่อมถึงผู้เกี่ยวข้อง และบันทึกการแจ้งซ่อมในระบบ CMS ภายใน 3 วันนับจากวันที่พบอุปกรณ์ชำรุดไม่สามารถใช้งานได้"]}, {"no": 2, "title": "รายงาน KEY CARD ACCESS - ตรวจสอบ รายงาน ACCESS TRANSACTION และ ALARM TRANSACTION", "maxScore": 1, "subs": ["จัดเก็บรายงาน ACCESS TRANSACTION, HISTORY USERS และ ALARM TRANSACTION, HISTORY ACTIVITY (เฉพาะวันที่เกิดการบุกรุก) ครบถ้วน, ลงชื่อในรายงานจาก C9 ,DUTY STORE และผู้จัดการสาขา ผิดพลาดเฉพาะการลงชื่อได้ 2 จุด", "DUTY STORE รูดบัตรไม่ตรงกับข้อมูลในบัตร, การเปิด - ปิด ระบบด้วย USER LP หลังจาก DUTY STORE ปิดงานประตูสุดท้าย ต้องจัดทำรายงานเหตุ 24 ชั่วโมง และต้องระบุสาเหตุในรายงาน ให้ครบถ้วน / - การเปิด - ปิด ระบบด้วย USER LP ระหว่างวัน และ การเปิด - ปิด ประตูที่ไม่สามารถระบุประตูได้ (PUSH BUTTONไม่ระบุประตู) และ ALARM, INVALID PIN CODE,WRONG PIN  ต้องระบุสาเหตุในรายงานให้ครบถ้วน"]}, {"no": 3, "title": "เสาสัญญาณ EAS และ เครื่องทำลายสัญญาณ TAG (DEACTIVATOR) ทุกจุด ต้องสามารถใช้งานได้", "maxScore": 2, "subs": ["เสาสัญญาณ EAS, เครื่องทำลายสัญญาณ TAG (DEACTIVATOR) สามารถใช้งานได้ปกติ และเปิดตลอดเวลาที่เปิดให้บริการ กรณีชำรุดมี E-MAIL แจ้งซ่อมจนกว่าจะใช้งานได้ปกติ"]}, {"no": 4, "title": "การบันทึกภาพระบบ CC.TV., CC.TV. PARKING ทุกจุดที่ติดตั้ง และ พนักงานประจำจุด CC.TV ROOM", "maxScore": 3, "subs": ["ระบบสามารถใช้งานได้ตลอดเวลา, บันทึกต่อเนื่องครบทุกจุด, ภาพที่บันทึกชัดเจน, สามารถบันทึกภาพได้ 14 วัน และ มี E -MAIL แจ้งซ่อม และติดตามทุกๆ 7 วัน กรณีกล้อง CCTV ชำรุด สำหรับกล้องที่เป็นระบบ ONLINE สามารถใช้งานได้ปกติ และ ONLINE มาที่ COMMAND CENTER", "ระบบ CC.TV. เห็นป้ายทะเบียนรถขาเข้า-ขาออก (รถจักรยานยนต์ และ รถยนต์) และเห็นรูปพรรณสัญฐานคนขับรถจักรยานยนต์, รถยนต์ ชัดเจน, มุมกล้องเห็นตู้เซฟ ครบทุกตู้ และ เห็นการส่งถุงเงินรายได้ของแคชเชียร์", "ห้อง CCTV ต้องมีเจ้าหน้าที่ LP หรือพนักงานรักษาความปลอดภัย อยู่ปฏิบัติหน้าที่ตลอดเวลาเปิด-ปิดสาขา  เพื่อสอดส่องพฤติกรรมการทุจริตของลูกค้าและพนักงาน  (ตรวจสอบเฉพาะสาขาที่มีห้อง CC.TV), จุดทางเข้า-ออกพนักงาน อยู่ปฏิบัติหน้าที่ตลอดช่วงเปิดประตูพนักงาน พร้อมทำหน้าที่ค้นตัวพนักงาน และผู้มาติดต่อผ่านเข้า-ออก พื้นที่,กำหนดจุดเข้า - ออกของพนักงาน ต้องเข้า - ออกตามจุดที่กำหนดบริเวณหลังพื้นที่ขายเท่านั้นและมีการตรวจค้นตัวให้ถูกต้องตามนโยบาย"]}, {"no": 5, "title": "รายงานใบนำออกสินค้า (CHECK OUT LANE) ตรวจสอบ แผนกทีวี / เครื่องเสียง และ กลุ่มสินค้า DON JAI, FOOD SERVICE , RDS, O2O, OSX", "maxScore": 1, "subs": ["จัดทำรายงานควบคุม, ลงรายละเอียดครบถ้วนถูกต้อง,และ ใบนำออกสินค้าถูกต้องตรงกัน \n- สำหรับสาขาที่กำหนดให้ติดสติ๊กเกอร์สีส้ม ต้องลงรายละเอียดในสมุดควบคุมสติ๊กเกอร์สีส้ม, เรียงลำดับการออกเลขที่สติ๊กเกอร์ส้มในใบนำออกสินค้า, ติดสติ๊กเกอร์ส้มกล่องสินค้าที่ชำระเงินและตรวจสอบเรียบร้อยแล้ว \n- กรณียกเลิก LP ลงชื่อตรวจสอบและเขียนคำว่า \"ยกเลิก\" ในใบผ่านพร้อมระบุสาเหตุการยกเลิก,จัดเก็บใบผ่านที่ยกเลิกครบทุกใบ \n- กรณีใบนำออกสินค้าสูญหาย LP จัดทำบันทึกภายใน (MEMO)ระบุรายละเอียดลงในรายงานสรุปใบนำสินค้าออกแผนกทีวี/เครื่องเสียง ทั้ง 2 กรณีข้างต้น C9 ตรวจสอบในรายงานสรุปใบนำสินค้าออกแผนกทีวี / เครื่องเสียงทุกวัน ,พนักงาน รปภ. ลงชื่อในใบผ่านครบถ้วน\n- ตรวจสอบการนำสินค้าออก กลุ่มสินค้า DON JAI,FOOD SERVICE , RDS,O2S, OSX มีการควบคุมออกใบนำออกสินค้าและฝ่ายLP ตรวจสอบรายละเอียดจัดเก็บเอกสารให้ครบถ้วน"]}, {"no": 6, "title": "การขายสินค้า HARDLINE HUB ที่จัดส่งผ่านคลังสินค้า DC", "maxScore": 1, "subs": ["พิมพ์รายงานสรุปขายสินค้า HARDLINE HUB, ใบเสร็จจากระบบ ON-DEMAND ที่ทำการขาย, จัดเก็บรายงานและ  LP ลงชื่อตรวจสอบเอกสารครบถ้วนทุกวัน"]}, {"no": 7, "title": "บริการจัดส่งสินค้า FREE DELIVERY, FLEET OPTIMIZATION, LAST MAILES ให้กับลูกค้าที่ซื้อสินค้าขนาดใหญ่ไม่สามารถนำกลับเองได้", "maxScore": 1, "subs": ["จัดเก็บเอกสารสรุปส่งสินค้าประจำวัน และจัดเก็บให้ครบทุกเลขที่, LP ลงชื่อตรวจสอบรายละเอียดในเอกสารสรุปส่งสินค้าประจำวัน ใบนำส่งสินค้า (DELIVERY ORDER) มีลายเซ็นตรวจสอบจากพนักงาน รปภ. / ฝ่าย LP และ กรณีลูกค้าปฏิเสธการรับสินค้า ให้ขีดฆ่ารายการสินค้าในเอกสารสรุปส่งสินค้าประจำวัน / DELIVERY ITEM TAG ที่ยกเลิกและจัดเก็บให้ครบถ้วน"]}, {"no": 8, "title": "การบันทีกข้อมูลผู้กระทำความผิดในระบบสืบค้นประวัติผู้กระทำความผิด (SPMS)", "maxScore": 2, "subs": ["บันทึกประวัติผู้กระทำความผิดทุกกรณีภายใน 2 วันนับจากวันที่กระทำความผิด และบันทึกรายละเอียดผู้กระทำความผิดครบถ้วนถูกต้องตรงกับชุดเอกสารรายงานสอบสวน LPF1-13, LPF14, LPF15 สำเนาบัตรประชาชน (ชื่อ-สกุล, รหัสพนักงาน, เลขที่บัตรประชาชน, กลุ่มผู้กระทำความผิด, ที่อยู่ตามบัตรประชาชน, ประเภทการกระทำความผิด) รูปภาพประกอบผู้กระทำความผิดในระบบ SPMS (ยกเว้น เคสทางวินัยจากระบบ CCTV COMMAND) ระบบ SPMS ต้องอยู่ในสถานะ APPROVED กรณีพบปัญหาให้ติดตาม AREA LOSS PREVENTION ไม่เกิน  7 วัน", "จัดเก็บชุดเอกสารรายงานสอบสวน (LPF1-13), รายงานแบบสรุปการดำเนินการกับผู้ต้องหาขโมยสินค้า (LPF14) และรายงานแบบสรุปผลการติดตามคดี (LPF15) ครบถ้วน"]}, {"no": 9, "title": "การสุ่มตรวจนับเงินห้องเซฟ", "maxScore": 2, "subs": ["สุ่มตรวจนับเงินห้องเซฟตามรอบตรวจนับตามที่ LP_HO กำหนด โดยใช้ USER LP ผู้บันทึกผลการตรวจนับเงินในเซฟผ่านระบบ CRS เป็นผู้ที่มาปฏิบัติงานจริงตามรายงาน TIME ATTENDANCE ของพนักงาน, กรณีไม่สามารถตรวจนับในวันที่กำหนดได้ ส่งเมลล์ขอเลื่อนการตรวจนับ แจ้ง E-MAIL TO : AREA_LP, NAKOOL SIRIBANNAPHAISAL, STORE_OPERATIONS_AUDIT"]}, {"no": 10, "title": "รายงานการแจ้งบัญชีสารเคมีอันตราย", "maxScore": 2, "subs": ["จัดเก็บรายงานการแจ้งบัญชีสารเคมีอันตรายครบถ้วนถูกต้องตามที่ SAFETY_HO  กำหนดครบถ้วนถูกต้อง", "ยื่นเอกสารให้หน่วยงานราชการประจำพื้นที่ประทับตราภายใน 30  วันนับจากวันที่ได้รับข้อมูล[SAFETY_HO สื่อสารสาขา]"]}, {"no": 11, "title": "LOSS MEETING", "maxScore": 2, "subs": ["จัดประชุม LOSS MEETING ร่วมกับ SGM, M.COMMERCIAL, M.FRESH FOOD, M.OPERATION, C2, C3, C4, C5, C6, C9 และทำรายงานการประชุมส่งให้กับ VP_OPEARATION, AREA_LP ตามสายงานรับทราบผลการประชุมทุกเดือนตามข้อกำหนดของ LP_HO และ OPERATION"]}, {"no": 12, "title": "การนำออกสินค้าผ่านระบบ GMC", "maxScore": 2, "subs": ["ตรวจสอบการจัดเก็บรายงานสรุปการนำสินค้าออกประจำวัน (GMC005), รายงานสรุปการรับคืนสินค้าออกประจำวัน (GMC006) ระบุรายละเอียด และผู้ตรวจสอบสินค้าลงชื่อ ถูกต้องครบถ้วน กรณียกเลิกใบเสร็จ / เปลี่ยนการส่งสินค้า ดำเนินการรับคืนสินค้าเข้าระบบ เพื่อยกเลิก / ส่งสินค้าครั้งถัดไป ในระบบให้ถูกต้อง มีพนักงาน LP ตรวจสอบสินค้า ร่วมกับพนักงานขนส่ง และพนักงาน OSX ครบทุกคัน  (SPO/ DJ ) และ UPDATE สถานะการจัดส่งให้ตรงตามหน้างานจริงทุกครั้งที่มีการเปลี่ยนแปลงการจัดส่ง"]}];
+
+const SF_ITEMS = [{"no": 1, "title": "การแต่งตั้งความปลอดภัย อาชีวอนามัยและสภาพแวดล้อมในการทำงาน (คปอ.)", "maxScore": 3, "subs": ["แต่งตั้งคณะกรรมการการเลือกตั้ง, จัดการเลือกตั้ง, แต่งตั้งคณะกรรมการ คปอ. ครบถ้วนถูกต้องตามข้อกำหนด, จัดทำประกาศแต่งตั้ง, แจ้งหน่วยงานราชการภายใน 15 วัน นับจากวันที่เปลี่ยนแปลงคณะกรรมการ, จัดทำบอร์ด, ลายเซ็นในแต่ละเอกสารและรายละเอียดครบถ้วนถูกต้อง, จัดเก็บเอกสารการเลือกตั้งตั้งครบถ้วน, จัดเก็บสำเนาหนังสือรับรองการผ่านการฝึกอบรม , สำเนาบัตรประชาชน, ประกาศแต่งตั้งคณะกรรมการความปลอดภัย อาชีวอนามัยและสภาพแวดล้อมในการทำงาน และ แจ้งแรงงานภายใน 30 วัน นับจากวันที่ผ่านการฝึกอบรม", "รายละเอียดในเอกสารสำเนาหนังสือรับรองการผ่านการฝึกอบรม, เอกสารการแต่งตั้งคณะกรรมการความปลอดภัย อาชีวอนามัยและสภาพแวดล้อมในการทำงาน (คปอ) ข้อมูลถูกต้องตรงกับ SAFETY ONLINE"]}, {"no": 2, "title": "การประชุมคณะกรรมการ (คปอ.) ประจำเดือน", "maxScore": 1, "subs": ["หนังสือเชิญประชุมแจ้งให้คณะกรรมการทราบไม่น้อยกว่า 3 วันก่อนถึงวันประชุม, จัดประชุมคณะกรรมการ คปอ. ถูกต้องตามเงื่อนไขที่สำนักงานใหญ่กำหนด, ประธาน และ คณะกรรมการ (คปอ.) เข้าร่วมประชุมครบตามวาระ (คณะกรรมการเข้าร่วมประชุมไม่น้อยกว่ากึ่งหนึ่งแต่ละครั้ง), ผู้เกี่ยวข้องลงชื่อตรวจสอบในแต่ละเอกสารครบถ้วนถูกต้อง, จัดเก็บหนังสือเชิญประชุม, รายชื่อผู้เข้าร่วมประชุม, รายงานการประชุม คณะกรรมการ (คปอ.), เอกสารการเดินพื้นที่, รายงานการประชุมแต่ละเดือนมีครบ 5 วาระและหัวข้อการประชุมมีรายละเอียดครบถ้วนตามที่ SAFETY_HO กำหนด ผิดพลาดเฉพาะรายละเอียดและการลงชื่อได้ 1 จุด"]}, {"no": 3, "title": "แผนป้องกันและระงับอัคคีภัยประจำปี 2569 / การฝึกซ้อมอพยพหนีไฟประจำปี และ การจัดทำบอร์ดการจัดหน่วยงานขณะเกิดอัคคีภัย FIRE FIGHTING ORGANIZATION", "maxScore": 3, "subs": ["- จัดทำแผนป้องกันและระงับอัคคีภัยประจำปี,  UPDATE ข้อมูลแผนป้องกันและระงับอัคคีภัยประจำปีครบถ้วนถูกต้อง (ตามแบบฟอร์มในนโยบาย SAFETY ONLINE), จัดทำรูปเล่มการฝึกซ้อมอพยพหนีไฟประจำปี, ฝึกซ้อมดับเพลิงขั้นต้น (40%), กลุ่มเสี่ยงพนักงานแผนก FRESH FOOD ครบทั้ง 3 เล่ม, แจ้งกรมแรงงานภายใน 30 วัน นับจากวันที่ได้รับหนังสือรับรองการฝึกซ้อมอพยพหนีไฟประจำปี (ยกเว้นกลุ่มเสี่ยงพนักงานแผนก FRESH FOOD ไม่ต้องแจ้งกรมแรงงาน) และ แผนดำเนินการในภาวะวิกฤติ (CRISIS MANAGEMENT) จำนวน 5 เล่ม วางไว้ในจุดที่กำหนด SGM, LP, HR, MTN, DUTY BOX ( กรณีไม่มี DUTY BOX ให้วางไว้ที่จุดบริการลูกค้า ) / - รายละเอียดในคู่มือแผนป้องกันระงับอัคคีภัยและข้อมูลในบอร์ด UPDATE เป็นปัจจุบัน (กรณีมีการเปลี่ยนแปลงให้ UPDATE ภายใน 30 วัน นับจากวันที่มีการเปลี่ยนแปลง หรือ ตามที่ SAFETY_HO กำหนด), มีพนักงานเข้าฝึกซ้อมดับเพลิงขั้นต้น (40%) มากกว่า 40% จากพนักงานทั้งหมดของสาขา, จัดอบรมกลุ่มเสี่ยงพนักงานแผนก FRESH FOOD ภายใน 10 วัน หลังจากฝึกซ้อมอพยพหนีไฟประจำปี / - จัดทำรายงานฝึกซ้อม FIRE MAN ประจำเดือน ครบทุกเดือนและมีรูปถ่ายฝึกซ้อมตามหัวข้อ SAFETY_HO กำหนด / - จัดทำ ORGANIZATION CHART FIREMAN, UPDATE ประกาศ และติดประกาศ FIREMAN ORGANIZATION CHART  ไว้ที่บอร์ด  เบอร์โทรศัพท์ฉุกเฉิน ( หมายเลขโทรศัพท์LP สาขา, ระดับจัดการสาขา , LP_HO, DISTRICT DIRECTOR ตามสาย, AREA ตามสาย, SAFTY_HO, สถานที่สำคัญของท้องถิ่น, สถานีตำรวจ, สถานีดับเพลิง, โรงพยาบาล ฯลฯ)", "แต่งตั้งเจ้าหน้าที่ FIRE MAN (กรณีมีการเปลี่ยนแปลงหรือมีการแต่งตั้งใหม่ให้ดำเนินการ ภายใน 15 วัน นับจากวันที่มีการเปลี่ยนแปลง), ประกาศแต่งตั้งครบถ้วน (กรณีแต่งตั้งไม่ครบ 10 คน ต้องได้รับการอนุมัติจาก SAFTY_HO.), ฝึกซ้อม FIRE MAN เพื่อเตรียมความพร้อม, ฝึกซ้อมครบทุกเดือน ( กรณีไม่สามารถฝึกซ้อมได้ภายในวันที่ 25 ของเดือน ต้องแจ้ง E-MAIL เพื่อขออนุมัติคุณวิทยา ตันเต็ง และต้องได้รับการอนุมัติก่อนดำเนินการพร้อมกับซ้อมภายในเดือนนั้น )"]}, {"no": 4, "title": "การแต่งตั้งเจ้าหน้าที่ความปลอดภัยในการทำงานระดับหัวหน้างานและระดับบริหาร  (จป.)", "maxScore": 3, "subs": ["แต่งตั้งคณะกรรมการ จป. ครบถ้วน, กรณีมีการเปลี่ยนแปลงคณะกรรมการ จป. แต่งตั้งภายใน 30 วัน นับจากวันที่มีการเปลี่ยนแปลงและปฎิบัติถูกต้องตามข้อกำหนด, SGM ลงชื่อรับรองการแต่งตั้งเจ้าหน้าที่ความปลอดภัย, แจ้งหน่วยงานราชการไม่เกิน 30 วัน ทุกกรณีและกรณีแจ้งออกจากพื้นที่ต้องแจ้งหน่วยงานราชการภายใน 7 วัน, จัดเก็บสำเนาหนังสือรับรองผ่านการฝึกอบรม , สำเนาบัตรประชาชน และ ประกาศแต่งตั้งเจ้าหน้าที่ความปลอดภัย, จัดเก็บเอกสารตอบรับการขึ้นทะเบียนจากหน่วยงานราชการ, UPDATE เลขที่การขึ้นทะเบียนเจ้าหน้าที่ความปลอดภัยใน SAFETY ONLINE , ติดตามเอกสารเลขการขึ้นทะเบียน จป. จากหน่วยงาน (ในกรณีติดตามแล้วเกินกำหนดเวลา สาขาแจ้ง E-MAIL คุณวิทยา ตันเต็ง), รายละเอียดในเอกสารสำเนาหนังสือรับรองผ่านการฝึกอบรม และ เอกสารการแต่งตั้งเจ้าหน้าที่ความปลอดภัยข้อมูลถูกต้องตรงกับ SAFETY ONLINE ผิดพลาดเฉพาะรายละเอียดในการบันทึกในระบบได้ 1 จุด"]}, {"no": 5, "title": "ตรวจสอบถังดับเพลิง, ตู้ FIRE HOSE, หัวรับน้ำดับเพลิง", "maxScore": 3, "subs": ["ถังดับเพลิง -  LAY OUT แสดงจุดติดตั้งของอุปกรณ์ดับเพลิงทุกชนิด ถูกต้องตรงกับพื้นที่จริง,มีป้ายสัญลักษณ์ติดแสดงจุดติดตั้งสามารถมองเห็นชัดเจน / - ใช้แบบฟอร์มที่ UPDATE, '- ถังดับเพลิง ทุกจุดสามารถใช้งานได้ตามมาตรฐานที่ SAFETY_HO กำหนด, สารเคมีที่อยู่ในถังไม่จับตัวกันเป็นก้อนมีตัวสลักปิดล็อค, ปิดสลักถูกต้อง, น้ำหนักอยู่ในเกณฑ์มากกว่า 80% ของน้ำหนักที่ระบุอยู่ข้างถัง ติดตั้งสูงจากพื้นไม่เกิน 140 ซม ,ไม่ติดตั้งถังดับเพลิงที่พื้น,  ความสะอาดไม่มีฝุ่นจับเป็นคราบ / กรณีเปลี่ยนแปลงจุดติดตั้งอุปกรณ์ดับเพลิงทุกชนิดต้อง UPDATE LAY OUT ส่ง E-MAIL แจ้ง AREA LOSS ในสาย , SAFETY HO", "ตู้ FIRE HOSE - LAY OUT แสดงจุดติดตั้งของอุปกรณ์ดับเพลิงทุกชนิด ถูกต้องตรงกับพื้นที่จริง,มีป้ายสัญลักษณ์ติดแสดงจุดติดตั้งสามารถมองเห็นชัดเจน / -ติดแบบฟอร์มการตรวจเช็คอุปกรณ์ตู้น้ำดับเพลิงและวิธีการใช้งานหน้าตู้ ถูกต้องตรงตามประเภท และใช้แบบฟอร์มที่ UPDATE,  ตรวจสอบCHECK LIST อุปกรณ์ตรงกับตู้ FIRE HOSE / - ไม่มีสิ่งของปิดบังอุปกรณ์ และแนวทางเดินหน้าตู้ FIRE HOSE มีความกว้างมากกว่า 1.1 เมตร ,ตู้ FIRE HOSE ที่ปิดล็อคกุญแจต้อง ติดข้อความ \"ทุบกระจกเมื่อเกิดเหตุ\" / - หัวรับน้ำดับเพลิงไม่มีสิ่งกีดขวางสามารถจ่ายน้ำได้, มีฝาครอบและสามารถเปิดออกได้  แนวทางเดินสามารถเข้าถึงได้ / - กรณีเปลี่ยนแปลงจุดติดตั้งอุปกรณ์ดับเพลิงทุกชนิดต้อง UPDATE LAY OUT ส่ง E-MAIL แจ้ง AREA LOSS ในสาย , SAFETY HO", "อุปกรณ์ผจญเพลิงที่จุดยุทธภัณฑ์ มีครบตามรายการใน SAFETY ONLINE , พร้อมใช้งานและได้มาตรฐาน ,คัดแยกอุปกรณ์ที่ไม่พร้อมใช้งานอย่างชัดเจนและติดป้ายระบุสถานะไม่พร้อมใช้งาน, ถัง BA มีอากาศอยู่ในถังมากกว่า 1/2 ของปริมาณอากาศในถัง ทุกวันที่25 UPDATE อุปกรณ์ชุดผจญเพลิงที่จุดยุทธภัณฑ์ทุกครั้งที่มีการเปลี่ยนแปลง"]}, {"no": 6, "title": "ประตูฉุกเฉิน (ประตูหนีไฟ)", "maxScore": 3, "subs": ["สัญญาณ ALARM และ สัญญาณไฟไซเรน ที่ประตูฉุกเฉินทำงานปกติอย่างสมบูรณ์ , ระบบ KEY CARD ACCESS แสดงผลการทดสอบ, แสดงเสียงสัญญาณ ALARM แจ้งเตือนใน CONTROL ROOM พนักงาน LP และ รปภ.ประจำจุด CCTV แจ้งจุดทดสอบถูกต้อง", "ไม่ปิดล็อกประตูฉุกเฉินทางเข้า-ออก, ประตูสามารถผลักไปในทิศทางการหนีไฟและประตูเปิดกว้างได้มากกว่า 90 องศา , ประตูฉุกเฉินมีแนวทางเดินกว้างไม่น้อยกว่า 1.1 เมตร ,ไม่มีสิ่งของกีดขวางภายในช่องทางเดินไปสู่ทางเข้า-ออกประตูฉุกเฉิน, ไม่มีสิ่งของวางปิดบังแนวทางเข้า-ออกประตูฉุกเฉิน"]}];
+
+const ALL_ITEMS = [
+  ...LP_ITEMS.map(i => ({...i, cat:'lp'})),
+  ...SF_ITEMS.map(i => ({...i, cat:'safety'})),
+];
+
+let currentFilter = 'all'; // 'all' | 'lp' | 'safety'
+
+const THAI_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+let currentMonthKey = null;
+let monthData = {}; // {no: {resp, due, status, note}}
+
+function currentMonthLabel(){
+  const sel = document.getElementById('monthSelect');
+  const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+  return opt ? opt.textContent : '—';
+}
+
+function buildMonthOptions(){
+  const sel = document.getElementById('monthSelect');
+  const now = new Date();
+  const opts = [];
+  // 12 months back, current, 3 forward
+  for(let i=-2;i<=3;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const label = THAI_MONTHS[d.getMonth()] + ' ' + (d.getFullYear()+543);
+    opts.push({key,label});
+  }
+  sel.innerHTML = opts.map(o=>`<option value="${o.key}">${o.label}</option>`).join('');
+  const nowKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  sel.value = nowKey;
+  currentMonthKey = nowKey;
+  sel.addEventListener('change', async ()=>{
+    currentMonthKey = sel.value;
+    await loadMonth();
+    render();
+  });
+}
+
+function storageKey(){ return 'lp-todo:' + currentMonthKey; }
+
+/* ================= Firebase / Firestore (shared, real-time sync for the LP team) ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDCsudYSRsCiHDsRHVYvl6ye-8uD8WkcAs",
+  authDomain: "audit-8d2e2.firebaseapp.com",
+  projectId: "audit-8d2e2",
+  storageBucket: "audit-8d2e2.firebasestorage.app",
+  messagingSenderId: "1074983429072",
+  appId: "1:1074983429072:web:ed4701c1961e706ca58fd5"
+};
+
+let db = null;
+let firestoreOK = false;
+try{
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firestoreOK = true;
+  }
+}catch(e){ firestoreOK = false; }
+
+function monthDocRef(mk){ return db.collection('lp-todo-months').doc(mk); }
+
+let monthUnsub = null;
+
+function isEditingNow(){
+  const el = document.activeElement;
+  const list = document.getElementById('cardList');
+  return !!(el && list && list.contains(el) && (el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.tagName==='SELECT'));
+}
+
+function setSyncStatus(status){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  if(status === 'online'){ el.textContent = '🟢 ออนไลน์ • sync กับทีม'; el.className = 'sync-badge online'; }
+  else if(status === 'connecting'){ el.textContent = '🟡 กำลังเชื่อมต่อ...'; el.className = 'sync-badge connecting'; }
+  else { el.textContent = '⚪ ออฟไลน์ • บันทึกในเครื่องนี้'; el.className = 'sync-badge offline'; }
+}
+
+// รองรับทั้งใน Claude.ai (window.storage) และเปิดไฟล์ตรงๆ ในเบราว์เซอร์ปกติ (localStorage)
+// เพื่อให้ส่งไฟล์ให้คนอื่นเปิดใช้ได้จริง ไม่ใช่แค่ในบัญชี Claude ของเราคนเดียว
+const hasClaudeStorage = (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+
+async function loadMonth(){
+  monthData = {};
+  if(monthUnsub){ monthUnsub(); monthUnsub = null; }
+
+  // ลองโหลด local cache ก่อนเสมอ (โชว์ได้ทันทีระหว่างรอ Firestore)
+  try{
+    const cached = localStorage.getItem(storageKey());
+    if(cached){ monthData = JSON.parse(cached); }
+  }catch(e){}
+
+  if(firestoreOK){
+    setSyncStatus('connecting');
+    const mk = currentMonthKey;
+    try{
+      // ถ้า Firestore ต่อไม่ได้/ค้าง ให้ timeout ใน 5 วิ แล้วตกเป็น offline (ไม่ค้างสีเหลือง)
+      const timeout = new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), 5000));
+      const snap = await Promise.race([ monthDocRef(mk).get(), timeout ]);
+      if(snap.exists){ monthData = snap.data().items || {}; }
+      setSyncStatus('online');
+    }catch(e){
+      setSyncStatus('offline');
+      render(); // แสดงรายการด้วยข้อมูลในเครื่อง (ถ้ามี) เมื่อ Firebase ใช้ไม่ได้
+      return;   // ไม่ต้อง subscribe realtime เพราะต่อ Firestore ไม่ได้
+    }
+    // subscribe แบบเรียลไทม์ ให้ทีมอื่นแก้ไขแล้วเห็นสดๆ
+    monthUnsub = monthDocRef(mk).onSnapshot({includeMetadataChanges:true}, (snap)=>{
+      if(currentMonthKey !== mk) return; // เปลี่ยนเดือนไปแล้ว ไม่ต้องอัปเดต
+      if(!snap.exists) return;
+      const incoming = snap.data().items || {};
+      const incomingStr = JSON.stringify(incoming);
+      const isSameAsCurrent = (incomingStr === JSON.stringify(monthData));
+      monthData = incoming;
+      try{ localStorage.setItem(storageKey(), JSON.stringify(monthData)); }catch(e){}
+      setSyncStatus(snap.metadata.fromCache ? 'offline' : 'online');
+      // ถ้าข้อมูลเหมือนเดิม แปลว่านี่คือ echo ของการบันทึกของเราเอง (optimistic + confirm) ไม่ต้อง render ซ้ำ
+      if(!isSameAsCurrent && !isEditingNow()) render();
+    }, ()=>{ setSyncStatus('offline'); });
+    return;
+  }
+
+  // ไม่มี Firestore (โหลดไม่สำเร็จ/ถูกบล็อก) -> ใช้ window.storage (Claude.ai) เป็นอันดับถัดไป
+  if(hasClaudeStorage){
+    try{
+      const res = await window.storage.get(storageKey(), false);
+      if(res && res.value){ monthData = JSON.parse(res.value); }
+    }catch(e){}
+  }
+  setSyncStatus('offline');
+}
+
+let saveTimer = null;
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    // แคชในเครื่องไว้ก่อนเสมอ กันข้อมูลหายถ้าเน็ตหลุด
+    try{ localStorage.setItem(storageKey(), JSON.stringify(monthData)); }catch(e){}
+
+    if(firestoreOK){
+      try{
+        await monthDocRef(currentMonthKey).set({
+          items: monthData,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        setSyncStatus('online');
+        showToast('บันทึกแล้ว • sync กับทีม');
+        return;
+      }catch(e){
+        setSyncStatus('offline');
+        showToast('เน็ตหลุด บันทึกไว้ในเครื่องก่อน');
+      }
+    } else {
+      showToast('บันทึกแล้ว (ในเครื่องนี้)');
+    }
+
+    if(hasClaudeStorage){
+      try{ await window.storage.set(storageKey(), JSON.stringify(monthData), false); }catch(e){}
+    }
+  }, 400);
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function statusClass(status){
+  if(status === 'เสร็จแล้ว') return 'done';
+  if(status === 'กำลังดำเนินการ') return 'progress';
+  if(status === 'มีปัญหา') return 'issue';
+  return '';
+}
+
+function itemKey(item){ return item.cat + '-' + item.no; }
+
+function catLabel(cat){ return cat === 'lp' ? 'LP' : 'Safety'; }
+
+// คะแนนคำนวณอัตโนมัติจากสถานะ: เสร็จแล้ว = คะแนนเต็มตามไฟล์ / อื่นๆ = ยังไม่มีคะแนน
+function scoreValOf(item, d){
+  return d.status === 'เสร็จแล้ว' ? item.maxScore : null;
+}
+
+function metaHtml(item, d){
+  const scoreVal = scoreValOf(item, d);
+  const respChip = d.resp
+    ? `<span class="status-chip resp-chip">👤 ${escapeHtml(d.resp)}</span>`
+    : `<span class="status-chip resp-chip resp-missing">👤 ยังไม่ระบุผู้รับผิดชอบ</span>`;
+  return `
+    <span class="status-chip cat-chip cat-chip-${item.cat}">${catLabel(item.cat)}</span>
+    <span class="status-chip">${d.status}</span>
+    <span class="status-chip score-chip">🏅 ${scoreVal !== null ? scoreVal : '–'} / ${item.maxScore}</span>
+    ${respChip}
+    ${d.due ? `<span class="status-chip">📅 ${formatDue(d.due)}</span>` : ''}
+  `;
+}
+
+// อัปเดตเฉพาะการ์ดที่เปลี่ยน ไม่ต้องรื้อสร้างทั้งลิสต์ใหม่ (เร็วขึ้นมากบนมือถือ)
+function updateCardInPlace(card, item, d){
+  const wasOpen = card.classList.contains('open');
+  card.className = 'card ' + statusClass(d.status) + ' cat-' + item.cat + (wasOpen ? ' open' : '');
+
+  const meta = card.querySelector('.meta');
+  if(meta) meta.innerHTML = metaHtml(item, d);
+
+  card.querySelectorAll('.status-opt').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.v === d.status);
+  });
+}
+
+// อัปเดต Dashboard ด้านบน โดยคำนวณจาก monthData ตรงๆ ไม่ต้องวนซ้ำ DOM
+function updateSummary(){
+  const items = ALL_ITEMS.filter(it => currentFilter === 'all' || it.cat === currentFilter);
+  let doneCount = 0, progressCount = 0, notStartedCount = 0, issueCount = 0;
+  let scoreSum = 0, maxSum = 0;
+
+  items.forEach(item=>{
+    const key = itemKey(item);
+    const d = monthData[key];
+    maxSum += item.maxScore;
+
+    const status = d ? d.status : 'ยังไม่เริ่ม';
+    if(status === 'เสร็จแล้ว') doneCount++;
+    else if(status === 'กำลังดำเนินการ') progressCount++;
+    else if(status === 'มีปัญหา') issueCount++;
+    else notStartedCount++;
+
+    if(d){
+      const scoreVal = scoreValOf(item, d);
+      if(scoreVal !== null) scoreSum += scoreVal;
+    }
+  });
+
+  const pct = maxSum ? (scoreSum/maxSum*100) : 0;
+
+  document.getElementById('dashMonth').textContent = `เดือน : ${currentMonthLabel()}`;
+  document.getElementById('dashCompleted').textContent = `${doneCount} / ${items.length}`;
+  document.getElementById('dashProgress').textContent = progressCount;
+  document.getElementById('dashNotStarted').textContent = notStartedCount;
+  document.getElementById('dashIssue').textContent = issueCount;
+  document.getElementById('dashScore').textContent = `${formatScore(scoreSum)} / ${formatScore(maxSum)}`;
+  document.getElementById('dashCompliancePct').textContent = `${pct.toFixed(1)}%`;
+  document.getElementById('dashComplianceBar').style.width = pct + '%';
+}
+
+function render(){
+  const list = document.getElementById('cardList');
+  list.innerHTML = '';
+
+  const items = ALL_ITEMS.filter(it => currentFilter === 'all' || it.cat === currentFilter);
+  const frag = document.createDocumentFragment();
+
+  items.forEach(item=>{
+    const key = itemKey(item);
+    const d = monthData[key] || {resp:'', due:'', status:'ยังไม่เริ่ม', note:''};
+    monthData[key] = d;
+
+    const card = document.createElement('div');
+    card.className = 'card ' + statusClass(d.status) + ' cat-' + item.cat;
+    card.dataset.key = key;
+
+    const detailText = item.subs.map((s,i)=> item.subs.length>1 ? `${i+1}. ${s}` : s).join('\n\n');
+
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="badge">${item.no}</div>
+        <div class="card-title">
+          <div class="t">${escapeHtml(item.title)}</div>
+          <div class="meta">${metaHtml(item, d)}</div>
+        </div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="detail-box">${escapeHtml(detailText)}</div>
+
+          <div class="field">
+            <label>สถานะ</label>
+            <div class="status-select">
+              ${['ยังไม่เริ่ม','กำลังดำเนินการ','เสร็จแล้ว','มีปัญหา'].map(s=>
+                `<div class="status-opt ${d.status===s?'active':''}" data-v="${s}">${s}</div>`
+              ).join('')}
+            </div>
+            <div class="hint">ทำเครื่องหมาย "เสร็จแล้ว" จะได้คะแนนเต็ม (${item.maxScore}) ให้อัตโนมัติ</div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label>ผู้รับผิดชอบ</label>
+              <input type="text" class="inp-resp" placeholder="ชื่อผู้รับผิดชอบ" value="${escapeAttr(d.resp)}">
+            </div>
+            <div class="field">
+              <label>กำหนดวันที่ตรวจ</label>
+              <input type="date" class="inp-due" value="${d.due||''}">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>หมายเหตุ</label>
+            <textarea class="inp-note" placeholder="บันทึกเพิ่มเติม...">${escapeHtml(d.note||'')}</textarea>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // toggle open — แค่สลับคลาส ไม่ต้องรอโหลดอะไรเพิ่ม
+    card.querySelector('.card-head').addEventListener('click', ()=>{
+      card.classList.toggle('open');
+    });
+
+    // status buttons — อัปเดตเฉพาะการ์ดนี้ ไม่รื้อทั้งลิสต์
+    card.querySelectorAll('.status-opt').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        d.status = btn.dataset.v;
+        updateCardInPlace(card, item, d);
+        updateSummary();
+        scheduleSave();
+      });
+    });
+
+    card.querySelector('.inp-resp').addEventListener('input', (e)=>{
+      d.resp = e.target.value;
+      scheduleSave();
+    });
+    card.querySelector('.inp-resp').addEventListener('blur', ()=>{
+      updateCardInPlace(card, item, d);
+    });
+
+    card.querySelector('.inp-due').addEventListener('change', (e)=>{
+      d.due = e.target.value;
+      updateCardInPlace(card, item, d);
+      scheduleSave();
+    });
+
+    card.querySelector('.inp-note').addEventListener('input', (e)=>{
+      d.note = e.target.value;
+      scheduleSave();
+    });
+
+    frag.appendChild(card);
+  });
+
+  list.appendChild(frag);
+  updateSummary();
+}
+
+
+function formatScore(n){
+  if(Number.isInteger(n)) return String(n);
+  return n.toFixed(1);
+}
+function formatDue(iso){
+  if(!iso) return '';
+  const [y,m,dd] = iso.split('-');
+  return `${dd}/${m}/${(parseInt(y)+543)}`;
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+async function init(){
+  buildMonthOptions();
+  document.querySelectorAll('#filterTabs .tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('#filterTabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFilter = tab.dataset.cat;
+      render();
+    });
+  });
+  render();            // โชว์รายการทันที ไม่ต้องรอ Firebase
+  await loadMonth();   // แล้วค่อยดึงข้อมูลเดือน (sync ทีหลัง)
+  render();            // render อีกครั้งเมื่อได้ข้อมูลจริง
+}
+init();
+</script>
+</body>
+</html>
